@@ -52,10 +52,18 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: "Confirmation email sent!" })
   } catch (error) {
-    console.error("Registration error:", error)
+    console.error("❌ Registration error:", error)
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors }, { status: 400 })
     }
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    // Log detailed error information
+    if (error instanceof Error) {
+      console.error("Error message:", error.message)
+      console.error("Error stack:", error.stack)
+    }
+    return NextResponse.json({ 
+      error: "Internal server error",
+      message: error instanceof Error ? error.message : "Unknown error"
+    }, { status: 500 })
   }
 }
