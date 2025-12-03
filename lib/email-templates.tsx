@@ -24,4 +24,19 @@ export const emailTemplates = {
       <p>If you did not perform this action, please contact support immediately.</p>
     </div>
   `,
+  emailVerification: (token: string) => `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+      <h1>Verify your email</h1>
+      <p>Click the link below to verify your email address:</p>
+      <a href="${process.env.NEXT_PUBLIC_APP_URL}/new-verification?token=${token}" style="display: inline-block; background-color: #0070f3; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 20px 0;">Verify Email</a>
+    </div>
+  `,
+  twoFactorToken: (token: string) => `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+      <h1>Two-Factor Authentication</h1>
+      <p>Your 2FA code is:</p>
+      <p style="font-size: 24px; font-weight: bold; letter-spacing: 5px;">${token}</p>
+      <p>This code will expire in 1 hour.</p>
+    </div>
+  `,
 }

@@ -1,13 +1,20 @@
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
-import { hashPassword, login } from "@/lib/auth"
+import { hashPassword } from "@/lib/auth"
 import { z } from "zod"
 import { sendEmail } from "@/lib/email"
 import { emailTemplates } from "@/lib/email-templates"
+import { generateVerificationToken } from "@/lib/tokens"
 
 const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
+  terms: z.boolean().refine((val) => val === true, {
+    message: "You must accept the terms and conditions",
+  }),
+  privacy: z.boolean().refine((val) => val === true, {
+    message: "You must accept the privacy policy",
+  }),
 })
 
 export async function POST(request: Request) {
@@ -25,23 +32,25 @@ export async function POST(request: Request) {
     }
 
     const hashedPassword = await hashPassword(password)
+    const now = new Date()
 
     // Create user
-    const result = await sql`
-      INSERT INTO users (email, password_hash, role)
-      VALUES (${email}, ${hashedPassword}, 'user')
-      RETURNING id, email, role
+    await sql`
+      INSERT INTO users (email, password_hash, role, terms_accepted_at, privacy_accepted_at)
+      VALUES (${email}, ${hashedPassword}, 'user', ${now}, ${now})
     `
 
-    const user = result[0]
+    // Generate verification token
+    const verificationToken = await generateVerificationToken(email)
 
-    // Send welcome email
-    await sendEmail(email, "Welcome to SaaS App", emailTemplates.welcome(email.split("@")[0])).catch(console.error) // Don't block registration on email failure
+    // Send verification email
+    await sendEmail(
+      email,
+      "Verify your email",
+      emailTemplates.emailVerification(verificationToken)
+    )
 
-    // Create session
-    await login(user)
-
-    return NextResponse.json({ user })
+    return NextResponse.json({ success: "Confirmation email sent!" })
   } catch (error) {
     console.error("Registration error:", error)
     if (error instanceof z.ZodError) {

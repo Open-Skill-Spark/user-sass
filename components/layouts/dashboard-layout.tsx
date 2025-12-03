@@ -18,6 +18,7 @@ import {
   SidebarInset,
 } from "@/components/ui/sidebar"
 import { Icons } from "@/components/ui/icons"
+import { Users, Activity } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import Link from "next/link"
@@ -54,6 +55,11 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
       icon: Icons.dashboard,
     },
     {
+      title: "Teams",
+      href: "/dashboard/teams",
+      icon: Users,
+    },
+    {
       title: "Settings",
       href: "/dashboard/settings",
       icon: Icons.settings,
@@ -61,11 +67,18 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
   ]
 
   if (user?.role === "admin") {
-    navItems.push({
-      title: "Users",
-      href: "/dashboard/users",
-      icon: Icons.user,
-    })
+    navItems.push(
+      {
+        title: "Users",
+        href: "/admin/users",
+        icon: Icons.user,
+      },
+      {
+        title: "Activity Logs",
+        href: "/admin/activity",
+        icon: Activity,
+      }
+    )
   }
 
   return (

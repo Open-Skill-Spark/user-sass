@@ -19,6 +19,12 @@ const registerSchema = z
     email: z.string().email("Invalid email address"),
     password: z.string().min(6, "Password must be at least 6 characters"),
     confirmPassword: z.string(),
+    terms: z.boolean().refine((val) => val === true, {
+      message: "You must accept the terms and conditions",
+    }),
+    privacy: z.boolean().refine((val) => val === true, {
+      message: "You must accept the privacy policy",
+    }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -48,6 +54,8 @@ export default function RegisterPage() {
         body: JSON.stringify({
           email: data.email,
           password: data.password,
+          terms: data.terms,
+          privacy: data.privacy,
         }),
       })
 
@@ -105,6 +113,38 @@ export default function RegisterPage() {
           />
           {errors.confirmPassword && <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>}
         </div>
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="terms"
+            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            disabled={isLoading}
+            {...register("terms")}
+          />
+          <label htmlFor="terms" className="text-sm text-muted-foreground">
+            I accept the{" "}
+            <Link href="/terms" className="underline underline-offset-4 hover:text-primary">
+              Terms and Conditions
+            </Link>
+          </label>
+        </div>
+        {errors.terms && <p className="text-sm text-red-500">{errors.terms.message}</p>}
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="privacy"
+            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            disabled={isLoading}
+            {...register("privacy")}
+          />
+          <label htmlFor="privacy" className="text-sm text-muted-foreground">
+            I accept the{" "}
+            <Link href="/privacy" className="underline underline-offset-4 hover:text-primary">
+              Privacy Policy
+            </Link>
+          </label>
+        </div>
+        {errors.privacy && <p className="text-sm text-red-500">{errors.privacy.message}</p>}
         <Button className="w-full" type="submit" disabled={isLoading}>
           {isLoading && <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />}
           Create Account
