@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -21,14 +21,29 @@ type CreateTeamFormValues = z.infer<typeof createTeamSchema>
 export function CreateTeamForm() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [isSlugEdited, setIsSlugEdited] = useState(false)
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    setValue,
+    watch,
   } = useForm<CreateTeamFormValues>({
     resolver: zodResolver(createTeamSchema),
   })
+
+  const name = watch("name")
+
+  useEffect(() => {
+    if (name && !isSlugEdited) {
+      const slug = name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+      setValue("slug", slug, { shouldValidate: true })
+    }
+  }, [name, isSlugEdited, setValue])
 
   async function onSubmit(data: CreateTeamFormValues) {
     setIsLoading(true)
@@ -73,7 +88,9 @@ export function CreateTeamForm() {
           id="slug"
           placeholder="my-team"
           disabled={isLoading}
-          {...register("slug")}
+          {...register("slug", {
+            onChange: () => setIsSlugEdited(true),
+          })}
         />
         {errors.slug && <p className="text-sm text-red-500">{errors.slug.message}</p>}
       </div>

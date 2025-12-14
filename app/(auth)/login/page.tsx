@@ -100,12 +100,7 @@ export default function LoginPage() {
               {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
             </div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
-                  Forgot password?
-                </Link>
-              </div>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -122,12 +117,19 @@ export default function LoginPage() {
           {showTwoFactor ? "Confirm" : "Sign In"}
         </Button>
       </form>
+      <div>
       <div className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}
         <Link href="/register" className="font-medium text-primary hover:underline">
           Sign up
         </Link>
       </div>
+      <div className="flex justify-end">
+                <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
+              </div>
     </AuthLayout>
   )
 }

@@ -3,6 +3,7 @@ import { sql } from "@/lib/db"
 import { redirect, notFound } from "next/navigation"
 import { InviteMemberForm } from "./invite-member-form"
 import { TeamMembersList } from "./team-members-list"
+import { RolesList } from "./roles-list"
 
 export default async function TeamPage({
   params,
@@ -44,6 +45,14 @@ export default async function TeamPage({
     ORDER BY tm.created_at ASC
   `
 
+  const roles = await sql`
+    SELECT * FROM team_roles 
+    WHERE team_id = ${team.id} 
+    ORDER BY created_at DESC
+  `
+
+  const isOwner = userRole === "owner"
+
   return (
     <div className="flex flex-col gap-8">
       <div>
@@ -52,7 +61,10 @@ export default async function TeamPage({
       </div>
 
       {(userRole === "owner" || userRole === "admin") && (
-        <InviteMemberForm slug={slug} />
+        <InviteMemberForm 
+          slug={slug} 
+          availableRoles={roles.map(r => ({ id: r.id, name: r.name }))}
+        />
       )}
 
       <TeamMembersList 
@@ -65,6 +77,15 @@ export default async function TeamPage({
         }))} 
         slug={slug}
         currentUserId={session.user.id}
+      />
+
+      <RolesList 
+        roles={roles.map((r) => ({
+          id: r.id,
+          name: r.name,
+        }))}
+        slug={slug}
+        isOwner={isOwner}
       />
     </div>
   )
