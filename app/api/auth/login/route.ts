@@ -78,7 +78,7 @@ export async function POST(request: Request) {
     }
 
     // Create session
-    await login({
+    const token = await login({
       id: user.id,
       email: user.email,
       role: user.role,
@@ -87,6 +87,7 @@ export async function POST(request: Request) {
     await logActivity(user.id, "login", { method: "email" })
 
     return NextResponse.json({
+      token,
       user: {
         id: user.id,
         email: user.email,

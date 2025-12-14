@@ -51,6 +51,8 @@ export async function login(userData: any) {
     sameSite: "lax",
     path: "/",
   })
+
+  return session
 }
 
 export async function logout() {
