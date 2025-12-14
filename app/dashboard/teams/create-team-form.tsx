@@ -18,7 +18,7 @@ const createTeamSchema = z.object({
 
 type CreateTeamFormValues = z.infer<typeof createTeamSchema>
 
-export function CreateTeamForm() {
+export function CreateTeamForm({ parentTeamId }: { parentTeamId?: string }) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [isSlugEdited, setIsSlugEdited] = useState(false)
@@ -51,7 +51,7 @@ export function CreateTeamForm() {
       const response = await fetch("/api/teams", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, parentTeamId }),
       })
 
       const responseData = await response.json()
@@ -96,7 +96,7 @@ export function CreateTeamForm() {
       </div>
       <Button type="submit" disabled={isLoading}>
         {isLoading && <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />}
-        Create Team
+        {parentTeamId ? "Create Department" : "Create Team"}
       </Button>
     </form>
   )

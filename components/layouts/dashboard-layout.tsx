@@ -23,6 +23,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { ChevronsUpDown, Plus } from "lucide-react"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -32,11 +41,23 @@ interface DashboardLayoutProps {
     image?: string
     role: string
   }
+  teams?: {
+    id: string
+    name: string
+    slug: string
+  }[]
 }
 
-export function DashboardLayout({ children, user }: DashboardLayoutProps) {
+export function DashboardLayout({ children, user, teams = [] }: DashboardLayoutProps) {
   const pathname = usePathname()
   const router = useRouter()
+  
+  // improved team detection logic
+  const currentTeamSlug = pathname.startsWith("/dashboard/teams/") 
+    ? pathname.split("/")[3] 
+    : null
+    
+  const currentTeam = teams.find(t => t.slug === currentTeamSlug)
 
   const handleLogout = async () => {
     try {
@@ -64,6 +85,11 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
       href: "/dashboard/settings",
       icon: Icons.settings,
     },
+    {
+      title: "Multi-tenant model",
+      href: "/dashboard/multi-tenant",
+      icon: Icons.server, // Using a server icon as a placeholder for multi-tenant
+    },
   ]
 
   if (user?.role === "admin") {
@@ -72,6 +98,11 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
         title: "Users",
         href: "/admin/users",
         icon: Icons.user,
+      },
+      {
+        title: "Tenants",
+        href: "/admin/tenants",
+        icon: Icons.building,
       },
       {
         title: "Activity Logs",
@@ -85,10 +116,36 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-2 font-semibold">
-            <Icons.shield className="h-6 w-6" />
-            <span>SaaS App</span>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 font-semibold hover:bg-muted/50 p-2 rounded-md w-full transition-colors outline-none">
+                <div className="flex h-6 w-6 items-center justify-center rounded-md border bg-background">
+                  <Icons.shield className="h-4 w-4" />
+                </div>
+                <span className="truncate flex-1 text-left">
+                  {currentTeam ? currentTeam.name : "Select Team"}
+                </span>
+                <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[200px]" align="start">
+              <DropdownMenuLabel>Teams</DropdownMenuLabel>
+              {teams.map((team) => (
+                <DropdownMenuItem key={team.id} asChild>
+                  <Link href={`/dashboard/teams/${team.slug}`} className="cursor-pointer">
+                    {team.name}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/teams/new" className="cursor-pointer flex items-center">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Team
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </SidebarHeader>
         <Separator />
         <SidebarContent>

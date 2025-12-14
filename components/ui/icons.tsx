@@ -14,6 +14,8 @@ import {
   Lock,
   Key,
   Bell,
+  Server,
+  Building,
 } from "lucide-react"
 
 export const Icons = {
@@ -32,4 +34,6 @@ export const Icons = {
   lock: Lock,
   key: Key,
   bell: Bell,
+  server: Server,
+  building: Building,
 }

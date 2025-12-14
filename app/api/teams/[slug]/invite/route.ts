@@ -1,12 +1,13 @@
+
 import { NextResponse } from "next/server"
 import { sql } from "@/lib/db"
-import { getSession } from "@/lib/auth"
+import { requireTenantPermission } from "@/lib/tenant"
 import { z } from "zod"
-import { logActivity } from "@/lib/logger"
+import { randomBytes } from "crypto"
 
 const inviteSchema = z.object({
   email: z.string().email(),
-  role: z.enum(["owner", "admin", "member"]).default("member"),
+  role: z.string().min(1),
 })
 
 export async function POST(
@@ -14,74 +15,57 @@ export async function POST(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const session = await getSession()
     const { slug } = await params
-
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
+    // Ensure requester is at least an admin
+    const context = await requireTenantPermission(slug, "admin")
+    
     const body = await request.json()
     const { email, role } = inviteSchema.parse(body)
 
-    // Get team
-    const teams = await sql`
-      SELECT * FROM teams WHERE slug = ${slug}
+    // Check if user exists
+    const existingUsers = await sql`
+      SELECT id, email FROM users WHERE email = ${email}
     `
 
-    if (teams.length === 0) {
-      return NextResponse.json({ error: "Team not found" }, { status: 404 })
-    }
-    const team = teams[0]
+    let userId: string
 
-    // Check if current user is owner or admin
-    const currentUserMembership = await sql`
-      SELECT * FROM team_members 
-      WHERE team_id = ${team.id} AND user_id = ${session.user.id}
-    `
+    if (existingUsers.length > 0) {
+      userId = existingUsers[0].id
+      
+      // Check if already a member
+      const existingMember = await sql`
+        SELECT id FROM team_members 
+        WHERE team_id = ${context.tenant.id} AND user_id = ${userId}
+      `
 
-    if (
-      currentUserMembership.length === 0 ||
-      (currentUserMembership[0].role !== "owner" && currentUserMembership[0].role !== "admin")
-    ) {
-      return NextResponse.json({ error: "Permission denied" }, { status: 403 })
-    }
-
-    // Check if user to invite exists
-    const users = await sql`
-      SELECT * FROM users WHERE email = ${email}
-    `
-
-    if (users.length === 0) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-    const userToInvite = users[0]
-
-    // Check if already a member
-    const existingMembership = await sql`
-      SELECT * FROM team_members 
-      WHERE team_id = ${team.id} AND user_id = ${userToInvite.id}
-    `
-
-    if (existingMembership.length > 0) {
-      return NextResponse.json({ error: "User is already a member" }, { status: 400 })
+      if (existingMember.length > 0) {
+        return NextResponse.json({ error: "User is already a member of this team" }, { status: 400 })
+      }
+    } else {
+      // Create placeholder user
+      const newUser = await sql`
+        INSERT INTO users (email, password_hash, role, is_active)
+        VALUES (${email}, 'placeholder', 'user', true)
+        RETURNING id
+      `
+      userId = newUser[0].id
     }
 
-    // Add member
+    // Generate invitation token
+    const token = randomBytes(32).toString("hex")
+
+    // Create membership
     await sql`
-      INSERT INTO team_members (team_id, user_id, role)
-      VALUES (${team.id}, ${userToInvite.id}, ${role})
+      INSERT INTO team_members (team_id, user_id, role, status, invitation_token)
+      VALUES (${context.tenant.id}, ${userId}, ${role}, 'invited', ${token})
     `
 
-    await logActivity(session.user.id, "invite_member", { 
-      teamId: team.id, 
-      invitedUserId: userToInvite.id, 
-      role 
-    })
+    // TODO: Send invitation email with link: /accept-invite?token=${token}
+    console.log(`Invitation link: http://localhost:3000/accept-invite?token=${token}`)
 
-    return NextResponse.json({ success: "Member added" })
+    return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("Invite member error:", error)
+    console.error("Invite error:", error)
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors }, { status: 400 })
     }

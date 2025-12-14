@@ -7,6 +7,7 @@ import { logActivity } from "@/lib/logger"
 const createTeamSchema = z.object({
   name: z.string().min(1, "Name is required"),
   slug: z.string().min(1, "Slug is required").regex(/^[a-z0-9-]+$/, "Slug must be lowercase, numbers, and hyphens"),
+  parentTeamId: z.string().optional(),
 })
 
 export async function POST(request: Request) {
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { name, slug } = createTeamSchema.parse(body)
+    const { name, slug, parentTeamId } = createTeamSchema.parse(body)
 
     // Check if slug exists
     const existingTeam = await sql`
@@ -31,8 +32,8 @@ export async function POST(request: Request) {
 
     // Create team
     const teamResult = await sql`
-      INSERT INTO teams (name, slug)
-      VALUES (${name}, ${slug})
+      INSERT INTO teams (name, slug, parent_team_id)
+      VALUES (${name}, ${slug}, ${parentTeamId || null})
       RETURNING id, name, slug
     `
     const team = teamResult[0]
