@@ -3,6 +3,7 @@ import { sql } from "@/lib/db"
 import { comparePassword, login } from "@/lib/auth"
 import { z } from "zod"
 import { generateTwoFactorToken } from "@/lib/tokens"
+import { generateAuthCode } from "@/lib/auth-codes"
 import { sendEmail } from "@/lib/email"
 import { emailTemplates } from "@/lib/email-templates"
 import { logActivity } from "@/lib/logger"
@@ -11,6 +12,7 @@ const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
   code: z.string().optional(),
+  callbackUrl: z.string().optional(),
 })
 
 export async function POST(request: Request) {
@@ -77,7 +79,20 @@ export async function POST(request: Request) {
       }
     }
 
-    // Create session
+    // If callbackUrl provided, do Hosted Login flow (Auth Code)
+    if (body.callbackUrl) {
+      const authCode = await generateAuthCode(user.id);
+      
+      // Check if callbackUrl already has params
+      const separator = body.callbackUrl.includes('?') ? '&' : '?';
+      const redirectUrl = `${body.callbackUrl}${separator}code=${authCode}`;
+
+      await logActivity(user.id, "login_redirect", { target: body.callbackUrl });
+
+      return NextResponse.json({ redirect: redirectUrl });
+    }
+
+    // Default: Standard Login (Cookie + Token)
     const token = await login({
       id: user.id,
       email: user.email,
@@ -92,6 +107,8 @@ export async function POST(request: Request) {
         id: user.id,
         email: user.email,
         role: user.role,
+        user_metadata: user.user_metadata,
+        app_metadata: user.app_metadata,
       },
     })
   } catch (error) {

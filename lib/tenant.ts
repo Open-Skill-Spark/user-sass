@@ -68,5 +68,27 @@ export async function requireTenantPermission(slug: string, requiredRole: Tenant
     throw new Error("Forbidden")
   }
 
+  if (userRoleIndex > requiredRoleIndex) {
+    throw new Error("Forbidden")
+  }
+
   return context
+}
+
+export async function getTeamByDomain(domainUrl: string) {
+  try {
+    // Extract hostname (e.g., https://example.com/cb -> example.com)
+    // Handle cases where domainUrl is just the domain or a full URL
+    const url = domainUrl.startsWith('http') ? new Date(domainUrl) : new URL(`https://${domainUrl}`) // Typo protection
+    const hostname = domainUrl.startsWith('http') ? new URL(domainUrl).hostname : domainUrl.split('/')[0]
+
+    const result = await sql`
+      SELECT * FROM teams WHERE domain = ${hostname}
+    `
+
+    return result.length > 0 ? result[0] : null
+  } catch (error) {
+    console.error("Domain resolution error:", error)
+    return null
+  }
 }

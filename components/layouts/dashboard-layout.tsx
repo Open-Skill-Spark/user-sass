@@ -18,7 +18,7 @@ import {
   SidebarInset,
 } from "@/components/ui/sidebar"
 import { Icons } from "@/components/ui/icons"
-import { Users, Activity } from "lucide-react"
+import { Users } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import Link from "next/link"
@@ -69,7 +69,8 @@ export function DashboardLayout({ children, user, teams = [] }: DashboardLayoutP
     }
   }
 
-  const navItems = [
+  // Main navigation items (visible to all users)
+  const mainNavItems = [
     {
       title: "Dashboard",
       href: "/dashboard",
@@ -85,32 +86,111 @@ export function DashboardLayout({ children, user, teams = [] }: DashboardLayoutP
       href: "/dashboard/settings",
       icon: Icons.settings,
     },
-    {
-      title: "Multi-tenant model",
-      href: "/dashboard/multi-tenant",
-      icon: Icons.server, // Using a server icon as a placeholder for multi-tenant
-    },
   ]
 
-  if (user?.role === "admin") {
-    navItems.push(
-      {
-        title: "Users",
-        href: "/admin/users",
-        icon: Icons.user,
-      },
-      {
-        title: "Tenants",
-        href: "/admin/tenants",
-        icon: Icons.building,
-      },
-      {
-        title: "Activity Logs",
-        href: "/admin/activity",
-        icon: Activity,
-      }
-    )
-  }
+  // Admin section items
+  const adminNavItems = user?.role === "admin" ? [
+    {
+      section: "ADMIN",
+      items: [
+        {
+          title: "Users",
+          href: "/admin/users",
+          icon: Icons.user,
+        },
+        {
+          title: "Tenants",
+          href: "/admin/tenants",
+          icon: Icons.building,
+        },
+        {
+          title: "Roles & Permissions",
+          href: "/admin/roles",
+          icon: Icons.shield,
+        },
+        {
+          title: "Social Connections",
+          href: "/admin/auth/social",
+          icon: Icons.link,
+        },
+      ]
+    },
+    {
+      section: "SECURITY",
+      items: [
+        {
+          title: "Security Settings",
+          href: "/admin/security",
+          icon: Icons.shieldAlert,
+        },
+        {
+          title: "Active Sessions",
+          href: "/admin/sessions",
+          icon: Icons.monitorSmartphone,
+        },
+        {
+          title: "Audit Logs",
+          href: "/admin/activity",
+          icon: Icons.scrollText,
+        },
+      ]
+    },
+    {
+      section: "CUSTOMIZATION",
+      items: [
+        {
+          title: "Branding",
+          href: "/admin/branding",
+          icon: Icons.palette,
+        },
+        {
+          title: "Domains",
+          href: "/admin/domains",
+          icon: Icons.globe,
+        },
+      ]
+    },
+    {
+      section: "ANALYTICS",
+      items: [
+        {
+          title: "Analytics",
+          href: "/admin/analytics",
+          icon: Icons.trendingUp,
+        },
+      ]
+    },
+    {
+      section: "SYSTEM",
+      items: [
+        {
+          title: "API Keys",
+          href: "/admin/api-keys",
+          icon: Icons.key,
+        },
+        {
+          title: "Webhooks",
+          href: "/admin/webhooks",
+          icon: Icons.webhook,
+        },
+        {
+          title: "Email Settings",
+          href: "/admin/email",
+          icon: Icons.mail,
+        },
+        {
+          title: "Import/Export",
+          href: "/admin/data/import-export",
+          icon: Icons.database,
+        },
+        {
+          title: "Multi-tenant Model",
+          href: "/dashboard/multi-tenant",
+          icon: Icons.server,
+        },
+      ]
+    },
+  ] : []
 
   return (
     <SidebarProvider>
@@ -149,8 +229,9 @@ export function DashboardLayout({ children, user, teams = [] }: DashboardLayoutP
         </SidebarHeader>
         <Separator />
         <SidebarContent>
+          {/* Main Navigation */}
           <SidebarMenu className="p-2">
-            {navItems.map((item) => (
+            {mainNavItems.map((item) => (
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.title}>
                   <Link href={item.href}>
@@ -161,6 +242,30 @@ export function DashboardLayout({ children, user, teams = [] }: DashboardLayoutP
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
+
+          {/* Admin Sections */}
+          {adminNavItems.map((section, sectionIndex) => (
+            <div key={sectionIndex}>
+              <Separator className="my-2" />
+              <div className="px-4 py-2">
+                <p className="text-xs font-semibold text-muted-foreground">
+                  {section.section}
+                </p>
+              </div>
+              <SidebarMenu className="px-2">
+                {section.items.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.title}>
+                      <Link href={item.href}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </div>
+          ))}
         </SidebarContent>
         <SidebarFooter className="p-4">
           <div className="flex items-center gap-3 rounded-lg bg-muted p-3">
